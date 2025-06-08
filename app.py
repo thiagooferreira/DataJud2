@@ -1,55 +1,72 @@
 import streamlit as st
 import requests
 import pandas as pd
+import time
+import logging
 
-# Dicionário com UF e seus respectivos endpoints
-uf_endpoints = {
-    "Acre": "tjac", "Alagoas": "tjal", "Amapá": "tjap", "Amazonas": "tjam",
-    "Bahia": "tjba", "Ceará": "tjce", "Distrito Federal": "tjdf", "Espírito Santo": "tjes",
-    "Goiás": "tjgo", "Maranhão": "tjma", "Mato Grosso": "tjmt", "Mato Grosso do Sul": "tjms",
-    "Minas Gerais": "tjmg", "Pará": "tjpa", "Paraíba": "tjpb", "Paraná": "tjpr",
-    "Pernambuco": "tjpe", "Piauí": "tjpi", "Rio de Janeiro": "tjrj", "Rio Grande do Norte": "tjrn",
-    "Rio Grande do Sul": "tjrs", "Rondônia": "tjro", "Roraima": "tjrr", "Santa Catarina": "tjsc",
-    "São Paulo": "tjsp", "Sergipe": "tjse", "Tocantins": "tjto"
+logging.basicConfig(level=logging.INFO)
+API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
+QUERY_SIZE = 100
+MAX_PAGES = 20
+STATUS_PRESCRICAO = "Arquivado - Extinção da Punibilidade - Prescrição"
+
+UF_ENDPOINTS = {
+    "AC":"tjac","AL":"tjal","AP":"tjap","AM":"tjam","BA":"tjba","CE":"tjce",
+    "DF":"tjdft","ES":"tjes","GO":"tjgo","MA":"tjma","MT":"tjmt","MS":"tjms",
+    "MG":"tjmg","PA":"tjpa","PB":"tjpb","PR":"tjpr","PE":"tjpe","PI":"tjpi",
+    "RJ":"tjrj","RN":"tjrn","RS":"tjrs","RO":"tjro","RR":"tjrr","SC":"tjsc",
+    "SP":"tjsp","SE":"tjse","TO":"tjto"
 }
 
-st.title("Consulta DataJud por UF e Status")
+def get_api_url(uf):
+    code = UF_ENDPOINTS.get(uf)
+    return f"https://api-publica.datajud.cnj.jus.br/api_publica_{code}/_search" if code else None
 
-# Seleção da UF
-selected_uf = st.selectbox("Selecione a UF", list(uf_endpoints.keys()))
+def fetch_status_options(api_url):
+    q = {"size":0,"aggs":{"options":{"terms":{"field":"status.descricao.keyword","size":500}}}}
+    r = requests.post(api_url, headers=headers(), json=q, timeout=30).json()
+    return [b["key"] for b in r.get("aggregations",{}).get("options",{}).get("buckets",[])]
 
-# Status fixo com opção de editar
-default_status = "Arquivado - Extinção da Punibilidade - Prescrição"
-status_input = st.text_input("Status (status.descricao)", value=default_status)
+def headers():
+    return {'Authorization':f'APIKey {API_KEY}','Content-Type':'application/json'}
 
-# Botão para iniciar consulta
-if st.button("Consultar"):
-    with st.spinner("Consultando..."):
-        endpoint = f"https://api-publica.datajud.cnj.jus.br/api_publica_{uf_endpoints[selected_uf]}/_search"
-        query = {
-            "size": 100,
-            "query": {
-                "bool": {
-                    "must": [
-                        {"match_phrase": {"status.descricao": status_input}}
-                    ]
-                }
-            }
-        }
+def search_with_status(api_url, status):
+    hits, last_sort = [], None
+    for page in range(MAX_PAGES):
+        body = {"size": QUERY_SIZE, "query":{"bool":{"must":[{"match":{"status.descricao":status}}]}},
+                "sort":[{"@timestamp":{"order":"asc"}}]}
+        if last_sort: body["search_after"]=last_sort
+        r = requests.post(api_url, headers=headers(), json=body, timeout=60).json()
+        batch = r.get("hits",{}).get("hits",[])
+        if not batch: break
+        hits.extend(batch)
+        last_sort = batch[-1].get("sort")
+        if len(batch)<QUERY_SIZE: break
+        time.sleep(0.1)
+    return hits
 
-        try:
-            response = requests.post(endpoint, json=query)
-            response.raise_for_status()
-            data = response.json()
+def main():
+    st.title("Consulta DataJud – Prescrição por UF")
+    uf = st.sidebar.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
+    api_url = get_api_url(uf)
+    if not api_url:
+        st.error("UF inválida."); return
 
-            results = [hit["_source"] for hit in data.get("hits", {}).get("hits", [])]
-            if results:
-                df = pd.DataFrame(results)
-                st.success(f"{len(df)} resultados encontrados.")
-                st.dataframe(df)
-                csv = df.to_csv(index=False).encode("utf-8")
-                st.download_button("Baixar CSV", csv, "resultados.csv", "text/csv")
-            else:
-                st.warning("Nenhum resultado encontrado.")
-        except Exception as e:
-            st.error(f"Erro ao consultar API: {e}")
+    try:
+        st.sidebar.info("Buscando statuses disponíveis…")
+        options = fetch_status_options(api_url)
+    except:
+        options = []
+
+    if STATUS_PRESCRICAO not in options:
+        st.warning(f"Status padrão não está disponível em {uf}. Disponíveis: {options[:5]}…")
+    else:
+        st.success("Status de prescrição disponível ✅")
+    status = STATUS_PRESCRICAO
+
+    if st.sidebar.button("Consultar"):
+        st.info(f"Consultando UF: {uf}, status: {status}")
+        hits = search_with_status(api_url, status)
+        st.success(f"{len(hits)} processos encontrados")
+        df = pd.json_normalize([h["_source"] for h in hits])
+        st.dataframe(df)
