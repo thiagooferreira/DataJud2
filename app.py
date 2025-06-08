@@ -7,16 +7,16 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
-QUERY_SIZE = 100  # número por página
-MAX_PAGES = 100   # limite de páginas a tentar
+QUERY_SIZE = 100
+MAX_PAGES = 100
 
 UF_ENDPOINTS = {
-    "AC":"tjac","AL":"tjal","AP":"tjap","AM":"tjam","BA":"tjba",
-    "CE":"tjce","DF":"tjdft","ES":"tjes","GO":"tjgo","MA":"tjma",
-    "MT":"tjmt","MS":"tjms","MG":"tjmg","PA":"tjpa","PB":"tjpb",
-    "PR":"tjpr","PE":"tjpe","PI":"tjpi","RJ":"tjrj","RN":"tjrn",
-    "RS":"tjrs","RO":"tjro","RR":"tjrr","SC":"tjsc","SP":"tjsp",
-    "SE":"tjse","TO":"tjto"
+    "AC": "tjac", "AL": "tjal", "AP": "tjap", "AM": "tjam", "BA": "tjba",
+    "CE": "tjce", "DF": "tjdft", "ES": "tjes", "GO": "tjgo", "MA": "tjma",
+    "MT": "tjmt", "MS": "tjms", "MG": "tjmg", "PA": "tjpa", "PB": "tjpb",
+    "PR": "tjpr", "PE": "tjpe", "PI": "tjpi", "RJ": "tjrj", "RN": "tjrn",
+    "RS": "tjrs", "RO": "tjro", "RR": "tjrr", "SC": "tjsc", "SP": "tjsp",
+    "SE": "tjse", "TO": "tjto"
 }
 
 def get_api_url(uf):
@@ -29,35 +29,37 @@ def headers():
         "Content-Type": "application/json"
     }
 
-def fetch_all_by_uf(api_url):
+def fetch_all_by_uf_and_area(api_url, area_keyword="Criminal"):
     all_hits, last_sort = [], None
-    for page in range(MAX_PAGES):
-        query = {
+    for _ in range(MAX_PAGES):
+        body = {
             "size": QUERY_SIZE,
-            "query": {"match_all": {}},
-            "sort":[{"@timestamp":{"order":"asc"}}]
+            "query": {
+                "bool": {
+                    "must": [
+                        {"match": {"classe.nome": area_keyword}}
+                    ]
+                }
+            },
+            "sort": [{"@timestamp": {"order": "asc"}}]
         }
         if last_sort:
-            query["search_after"] = last_sort
-
-        resp = requests.post(api_url, headers=headers(), json=query, timeout=60)
+            body["search_after"] = last_sort
+        resp = requests.post(api_url, headers=headers(), json=body, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         batch = data.get("hits", {}).get("hits", [])
         if not batch:
             break
-
         all_hits.extend(batch)
         last_sort = batch[-1].get("sort")
         if len(batch) < QUERY_SIZE:
             break
-        time.sleep(0.1)  # desacelera um pouco para evitar sobrecarga
-
-    logging.info(f"Total hits: {len(all_hits)}")
+        time.sleep(0.1)
     return all_hits
 
 def main():
-    st.title("Consulta DATAJUD – Retorno Completo por UF")
+    st.title("Consulta DataJud – UF + Área Criminal")
 
     uf = st.sidebar.selectbox("Selecione a UF", list(UF_ENDPOINTS.keys()))
     api_url = get_api_url(uf)
@@ -65,20 +67,22 @@ def main():
         st.error("UF inválida!")
         return
 
-    if st.button("Executar consulta (match_all)"):
-        with st.spinner(f"Buscando todos os processos da UF {uf} ..."):
+    st.sidebar.info("Área sendo filtrada: Criminal (classe.nome contém 'Criminal')")
+
+    if st.button("Executar consulta"):
+        with st.spinner(f"Buscando processos da Área Criminal em {uf}..."):
             try:
-                hits = fetch_all_by_uf(api_url)
+                hits = fetch_all_by_uf_and_area(api_url, area_keyword="Criminal")
             except Exception as e:
                 st.error(f"Erro na consulta: {e}")
                 return
 
-        st.success(f"{len(hits)} resultados encontrados na UF {uf}.")
+        st.success(f"{len(hits)} processos encontrados na Área Criminal — UF: {uf}.")
         if hits:
             df = pd.json_normalize([h["_source"] for h in hits])
             st.dataframe(df)
             csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button("📥 Baixar CSV completo", csv, f"{uf}_todos.csv", "text/csv")
+            st.download_button("📥 Baixar CSV", csv, f"{uf}_criminal.csv", "text/csv")
 
 if __name__ == "__main__":
     main()
