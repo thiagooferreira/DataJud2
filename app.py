@@ -19,7 +19,7 @@ UF_ENDPOINTS = {
     "SE":"tjse","TO":"tjto"
 }
 
-SEARCH_PHRASE = "Arquivado – Extinção da Punibilidade – Prescrição"
+SEARCH_PHRASE = "Arquivado"
 
 def get_api_url(uf):
     code = UF_ENDPOINTS.get(uf)
