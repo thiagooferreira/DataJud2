@@ -83,10 +83,25 @@ def main():
             return
         st.success(f"{len(hits)} processos encontrados com referência a '{TERM}'")
         if hits:
-            df = pd.json_normalize([h["_source"] for h in hits])
-            st.dataframe(df)
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button("📥 Baixar CSV", csv, f"{uf}_prescricao_variavel.csv", "text/csv")
+dados_brutos = [h["_source"] for h in hits]
+# Seleciona colunas principais para exibir
+dados_simples = [{
+    "numeroProcesso": d.get("numeroProcesso"),
+    "classe": d.get("classe", {}).get("nome"),
+    "tribunal": d.get("tribunal"),
+    "sistema": d.get("sistema", {}).get("nome"),
+    "dataAjuizamento": d.get("dataAjuizamento"),
+    "grau": d.get("grau")
+} for d in dados_brutos]
+
+df_visual = pd.DataFrame(dados_simples)
+st.dataframe(df_visual)
+
+# Exporta dados completos como CSV JSON-flattened
+df_completo = pd.json_normalize(dados_brutos, sep="_")
+csv = df_completo.to_csv(index=False).encode("utf-8")
+st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_prescricao_completo.csv", "text/csv")
+
 
 if __name__ == "__main__":
     main()
