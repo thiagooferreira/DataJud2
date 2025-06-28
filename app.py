@@ -72,10 +72,10 @@ def main():
         st.error("UF inválida!")
         return
 
-    st.sidebar.write(f"Buscando termos relacionados à **prescrição** em múltiplos campos")
+    st.sidebar.write(f"Buscando termos relacionados à **EXTINÇÃO DA PUNIBILIDADE** em múltiplos campos")
 
     if st.button("Buscar processos relacionados"):
-        st.info(f"Consultando UF: {uf}, buscando 'prescrição'...")
+        st.info(f"Consultando UF: {uf}, buscando 'EXTINÇÃO DA PUNIBILIDADE'...")
         try:
             hits = fetch_filtered_by_term(api_url, TERM)
         except Exception as e:
