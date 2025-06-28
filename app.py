@@ -64,7 +64,7 @@ def fetch_filtered_by_term(api_url, term):
     return hits
 
 def main():
-    st.title("DataJud – Buscar qualquer 'prescrição' por UF")
+    st.title("DataJud – Busca 'EXTINÇÃO DA PUNIBILIDADE' por UF")
 
     uf = st.sidebar.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
     api_url = get_api_url(uf)
