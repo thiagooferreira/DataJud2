@@ -10,12 +10,12 @@ QUERY_SIZE = 100
 MAX_PAGES = 100
 
 UF_ENDPOINTS = {
-    "AC":"tjac","AL":"tjal","AP":"tjap","AM":"tjam","BA":"tjba",
-    "CE":"tjce","DF":"tjdft","ES":"tjes","GO":"tjgo","MA":"tjma",
-    "MT":"tjmt","MS":"tjms","MG":"tjmg","PA":"tjpa","PB":"tjpb",
-    "PR":"tjpr","PE":"tjpe","PI":"tjpi","RJ":"tjrj","RN":"tjrn",
-    "RS":"tjrs","RO":"tjro","RR":"tjrr","SC":"tjsc","SP":"tjsp",
-    "SE":"tjse","TO":"tjto"
+    "AC": "tjac", "AL": "tjal", "AP": "tjap", "AM": "tjam", "BA": "tjba",
+    "CE": "tjce", "DF": "tjdft", "ES": "tjes", "GO": "tjgo", "MA": "tjma",
+    "MT": "tjmt", "MS": "tjms", "MG": "tjmg", "PA": "tjpa", "PB": "tjpb",
+    "PR": "tjpr", "PE": "tjpe", "PI": "tjpi", "RJ": "tjrj", "RN": "tjrn",
+    "RS": "tjrs", "RO": "tjro", "RR": "tjrr", "SC": "tjsc", "SP": "tjsp",
+    "SE": "tjse", "TO": "tjto"
 }
 
 TERM = "prescrição"
@@ -81,27 +81,26 @@ def main():
         except Exception as e:
             st.error(f"Erro na consulta: {e}")
             return
+
         st.success(f"{len(hits)} processos encontrados com referência a '{TERM}'")
+
         if hits:
-dados_brutos = [h["_source"] for h in hits]
-# Seleciona colunas principais para exibir
-dados_simples = [{
-    "numeroProcesso": d.get("numeroProcesso"),
-    "classe": d.get("classe", {}).get("nome"),
-    "tribunal": d.get("tribunal"),
-    "sistema": d.get("sistema", {}).get("nome"),
-    "dataAjuizamento": d.get("dataAjuizamento"),
-    "grau": d.get("grau")
-} for d in dados_brutos]
+            dados_brutos = [h["_source"] for h in hits]
+            dados_simples = [{
+                "numeroProcesso": d.get("numeroProcesso"),
+                "classe": d.get("classe", {}).get("nome"),
+                "tribunal": d.get("tribunal"),
+                "sistema": d.get("sistema", {}).get("nome"),
+                "dataAjuizamento": d.get("dataAjuizamento"),
+                "grau": d.get("grau")
+            } for d in dados_brutos]
 
-df_visual = pd.DataFrame(dados_simples)
-st.dataframe(df_visual)
+            df_visual = pd.DataFrame(dados_simples)
+            st.dataframe(df_visual)
 
-# Exporta dados completos como CSV JSON-flattened
-df_completo = pd.json_normalize(dados_brutos, sep="_")
-csv = df_completo.to_csv(index=False).encode("utf-8")
-st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_prescricao_completo.csv", "text/csv")
-
+            df_completo = pd.json_normalize(dados_brutos, sep="_")
+            csv = df_completo.to_csv(index=False).encode("utf-8")
+            st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_prescricao_completo.csv", "text/csv")
 
 if __name__ == "__main__":
     main()
