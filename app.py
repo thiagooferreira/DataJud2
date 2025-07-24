@@ -38,9 +38,9 @@ def fetch_filtered_by_term(api_url, term):
             "query": {
                 "bool": {
                     "should": [
-                        {"match_phrase": {"movimentos.nome": term}},
-                        {"match_phrase": {"movimentos.descricao": term}},
-                        {"match_phrase": {"status.descricao": term}}
+                        {"match": {"movimentos.nome": term}},
+                        {"match": {"movimentos.descricao": term}},
+                        {"match": {"status.descricao": term}}
                     ],
                     "minimum_should_match": 1
                 }
