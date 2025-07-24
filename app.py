@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
 QUERY_SIZE = 100
-MAX_PAGES = 10
+MAX_PAGES = 20
 
 UF_ENDPOINTS = {
     "AC": "tjac", "AL": "tjal", "AP": "tjap", "AM": "tjam", "BA": "tjba",
