@@ -18,7 +18,7 @@ UF_ENDPOINTS = {
     "SE": "tjse", "TO": "tjto"
 }
 
-TERM = "EXTINÇÃO DA PUNIBILIDADE"
+TERM = "Arquivado - EXTINÇÃO DA PUNIBILIDADE - PRESCRIÇÃO"
 
 def get_api_url(uf):
     code = UF_ENDPOINTS.get(uf)
