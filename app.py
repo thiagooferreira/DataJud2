@@ -18,7 +18,7 @@ UF_ENDPOINTS = {
     "SE": "tjse", "TO": "tjto"
 }
 
-TERM = "Arquivado"
+TERM = "Prescrição"
 
 def get_api_url(uf):
     code = UF_ENDPOINTS.get(uf)
