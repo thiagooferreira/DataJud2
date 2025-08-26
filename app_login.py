@@ -42,7 +42,7 @@ def login():
                 st.session_state.logged_in = True
                 st.success(f"Bem-vindo, {user}!")
                 time.sleep(1)
-                st.experimental_rerun()
+                st.rerun()  # ✅ Aqui está a correção
             else:
                 st.error("Usuário ou senha inválidos.")
         st.stop()
