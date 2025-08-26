@@ -47,7 +47,7 @@ def login():
                 time.sleep(1)
                 st.rerun()  # ✅ Correto para Streamlit atual
             else:
-                st.error("Usuário ou senha inválidos.")
+                st.error("Usuário ou senha inválidosssss.")
         st.stop()
 
 # --- Consulta à API ---
