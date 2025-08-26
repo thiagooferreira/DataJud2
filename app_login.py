@@ -7,13 +7,13 @@ import logging
 # --- Logging ---
 logging.basicConfig(level=logging.INFO)
 
-# --- Configurações de acesso ---
+# --- Autenticação ---
 USERS = {
     "admin": "senha123",
     "usuario1": "senha456"
 }
 
-# --- Parâmetros da API ---
+# --- API ---
 API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
 QUERY_SIZE = 100
 MAX_PAGES = 10
@@ -28,26 +28,29 @@ UF_ENDPOINTS = {
     "SE": "tjse", "TO": "tjto"
 }
 
-# --- Função de Login ---
+# --- Função de Login corrigida ---
 def login():
     st.title("🔒 Acesso Restrito")
+
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
     if not st.session_state.logged_in:
         user = st.text_input("Usuário")
         password = st.text_input("Senha", type="password")
-        if st.button("Entrar"):
+        login_button = st.button("Entrar")
+
+        if login_button:
             if USERS.get(user) == password:
                 st.session_state.logged_in = True
                 st.success(f"Bem-vindo, {user}!")
                 time.sleep(1)
-                st.rerun()  # ✅ Aqui está a correção
+                st.rerun()  # ✅ Correto para Streamlit atual
             else:
                 st.error("Usuário ou senha inválidos.")
         st.stop()
 
-# --- Funções de consulta ---
+# --- Consulta à API ---
 def get_api_url(uf):
     code = UF_ENDPOINTS.get(uf)
     return f"https://api-publica.datajud.cnj.jus.br/api_publica_{code}/_search" if code else None
@@ -91,11 +94,11 @@ def fetch_filtered_by_term(api_url, term):
     logging.info(f"Total hits contendo '{term}': {len(hits)}")
     return hits
 
-# --- App principal ---
+# --- App Principal ---
 def main():
     login()
 
-    st.title("📌 DataJud – Consulta por UF e termo: 'EXTINÇÃO DA PUNIBILIDADE'")
+    st.title("📌 DataJud – Consulta 'EXTINÇÃO DA PUNIBILIDADE' por UF")
 
     uf = st.sidebar.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
     api_url = get_api_url(uf)
@@ -103,9 +106,9 @@ def main():
         st.error("UF inválida!")
         return
 
-    st.sidebar.markdown("🔍 A busca examina múltiplos campos relacionados a status, descrição e movimentação.")
+    st.sidebar.markdown("🔍 Busca em campos relacionados a status, descrição e movimentação.")
 
-    if st.button("🔎 Buscar processos relacionados"):
+    if st.button("🔎 Buscar processos"):
         st.info(f"Consultando UF: {uf}, termo: '{TERM}'")
         try:
             hits = fetch_filtered_by_term(api_url, TERM)
