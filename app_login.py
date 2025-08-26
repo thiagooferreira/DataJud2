@@ -9,14 +9,14 @@ logging.basicConfig(level=logging.INFO)
 
 # --- Autenticação ---
 USERS = {
-    "admin": "senha123",
-    "usuario1": "senha456"
+    "teotonio.adv": "Theo.adv",
+    "consulta": "Teotonio456"
 }
 
 # --- API ---
 API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
 QUERY_SIZE = 100
-MAX_PAGES = 10
+MAX_PAGES = 100
 TERM = "EXTINÇÃO DA PUNIBILIDADE"
 
 UF_ENDPOINTS = {
