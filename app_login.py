@@ -16,8 +16,7 @@ USERS = {
 # --- API ---
 API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw=="
 QUERY_SIZE = 100
-MAX_PAGES = 100
-TERM = "EXTINÇÃO DA PUNIBILIDADE"
+MAX_PAGES = 900
 
 UF_ENDPOINTS = {
     "AC": "tjac", "AL": "tjal", "AP": "tjap", "AM": "tjam", "BA": "tjba",
@@ -27,6 +26,8 @@ UF_ENDPOINTS = {
     "RS": "tjrs", "RO": "tjro", "RR": "tjrr", "SC": "tjsc", "SP": "tjsp",
     "SE": "tjse", "TO": "tjto"
 }
+
+TERM = "PUNIBILIDADE"
 
 # --- Função de Login corrigida ---
 def login():
@@ -94,11 +95,8 @@ def fetch_filtered_by_term(api_url, term):
     logging.info(f"Total hits contendo '{term}': {len(hits)}")
     return hits
 
-# --- App Principal ---
 def main():
-    login()
-
-    st.title("📌 DataJud – Consulta 'EXTINÇÃO DA PUNIBILIDADE' por UF")
+    st.title("DataJud – Busca 'EXTINÇÃO DA PUNIBILIDADE' por UF")
 
     uf = st.sidebar.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
     api_url = get_api_url(uf)
@@ -106,17 +104,17 @@ def main():
         st.error("UF inválida!")
         return
 
-    st.sidebar.markdown("🔍 Busca em campos relacionados a status, descrição e movimentação.")
+    st.sidebar.write(f"Buscando termos relacionados à **EXTINÇÃO DA PUNIBILIDADE** em múltiplos campos")
 
-    if st.button("🔎 Buscar processos"):
-        st.info(f"Consultando UF: {uf}, termo: '{TERM}'")
+    if st.button("Buscar processos relacionados"):
+        st.info(f"Consultando UF: {uf}, buscando 'EXTINÇÃO DA PUNIBILIDADE'...")
         try:
             hits = fetch_filtered_by_term(api_url, TERM)
         except Exception as e:
             st.error(f"Erro na consulta: {e}")
             return
 
-        st.success(f"{len(hits)} processos encontrados")
+        st.success(f"{len(hits)} processos encontrados com referência a '{TERM}'")
 
         if hits:
             dados_brutos = [h["_source"] for h in hits]
@@ -134,7 +132,7 @@ def main():
 
             df_completo = pd.json_normalize(dados_brutos, sep="_")
             csv = df_completo.to_csv(index=False).encode("utf-8")
-            st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_extincao_punibilidade.csv", "text/csv")
+            st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_prescricao_completo.csv", "text/csv")
 
 if __name__ == "__main__":
     main()
