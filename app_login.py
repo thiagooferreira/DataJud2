@@ -29,7 +29,7 @@ UF_ENDPOINTS = {
 
 TERM = "PUNIBILIDADE"
 
-# --- Função de Login corrigida ---
+# --- Função de Login (sem alterações de regra) ---
 def login():
     st.title("🔒 Acesso Restrito")
 
@@ -44,14 +44,15 @@ def login():
         if login_button:
             if USERS.get(user) == password:
                 st.session_state.logged_in = True
+                st.session_state.username = user
                 st.success(f"Bem-vindo, {user}!")
                 time.sleep(1)
-                st.rerun()  # ✅ Correto para Streamlit atual
+                st.rerun()  # garante a rerenderização após login
             else:
                 st.error("Usuário ou senha inválidosssss.")
-        st.stop()
+        st.stop()  # bloqueia o restante da página enquanto não logado
 
-# --- Consulta à API ---
+# --- Consulta à API (MANTIDA) ---
 def get_api_url(uf):
     code = UF_ENDPOINTS.get(uf)
     return f"https://api-publica.datajud.cnj.jus.br/api_publica_{code}/_search" if code else None
@@ -95,16 +96,35 @@ def fetch_filtered_by_term(api_url, term):
     logging.info(f"Total hits contendo '{term}': {len(hits)}")
     return hits
 
+# --- Gate de autenticação + app ---
 def main():
+    # >>> EXIGIR LOGIN ANTES DE QUALQUER COISA <<<
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+    if not st.session_state.logged_in:
+        login()  # chama e bloqueia até autenticar
+        return
+
+    # --- UI principal (só aparece se logado) ---
     st.title("DataJud – Busca 'EXTINÇÃO DA PUNIBILIDADE' por UF")
 
-    uf = st.sidebar.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
+    with st.sidebar:
+        st.write(f"👤 Usuário: {st.session_state.get('username','-')}")
+        logout = st.button("Sair")
+        if logout:
+            for k in ["logged_in", "username"]:
+                if k in st.session_state:
+                    del st.session_state[k]
+            st.experimental_set_query_params()  # limpa params da URL se houver
+            st.rerun()
+
+        uf = st.selectbox("Selecione UF", list(UF_ENDPOINTS.keys()))
+        st.write("Buscando termos relacionados à **EXTINÇÃO DA PUNIBILIDADE** em múltiplos campos")
+
     api_url = get_api_url(uf)
     if not api_url:
         st.error("UF inválida!")
         return
-
-    st.sidebar.write(f"Buscando termos relacionados à **EXTINÇÃO DA PUNIBILIDADE** em múltiplos campos")
 
     if st.button("Buscar processos relacionados"):
         st.info(f"Consultando UF: {uf}, buscando 'EXTINÇÃO DA PUNIBILIDADE'...")
@@ -132,7 +152,12 @@ def main():
 
             df_completo = pd.json_normalize(dados_brutos, sep="_")
             csv = df_completo.to_csv(index=False).encode("utf-8")
-            st.download_button("📥 Baixar resultado completo (CSV)", csv, f"{uf}_prescricao_completo.csv", "text/csv")
+            st.download_button(
+                "📥 Baixar resultado completo (CSV)",
+                csv,
+                f"{uf}_prescricao_completo.csv",
+                "text/csv"
+            )
 
 if __name__ == "__main__":
     main()
